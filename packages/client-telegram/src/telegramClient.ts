@@ -3,6 +3,7 @@ import { message } from 'telegraf/filters';
 import { IAgentRuntime, elizaLogger } from "@ai16z/eliza";
 import { MessageManager } from "./messageManager.ts";
 import { getOrCreateRecommenderInBe } from "./getOrCreateRecommenderInBe.ts";
+import adapter from "../../../packages/adapter-postgres"
 
 
 const RATE_LIMITS = {
