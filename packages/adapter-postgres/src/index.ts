@@ -500,6 +500,7 @@ export class PostgresDatabaseAdapter
         }, "createMemory");
     }
 
+
     async searchMemories(params: {
         tableName: string;
         agentId: UUID;

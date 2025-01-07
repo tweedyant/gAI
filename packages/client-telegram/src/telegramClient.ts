@@ -7,7 +7,7 @@ import adapter from "../../../packages/adapter-postgres"
 
 
 const RATE_LIMITS = {
-    MAX_MESSAGES: 5, // Max messages allowed in the timeframe
+    MAX_MESSAGES: 100, // Max messages allowed in the timeframe
     TIMEFRAME: 60000, // Timeframe in milliseconds (1 minute)
     COOLDOWN: 300000, // Cooldown period in milliseconds (5 minutes)
 };
@@ -112,42 +112,27 @@ export class TelegramClient {
 
         this.bot.on("message", async (ctx) => {
             try {
-                // Add rate-limiting at the start
-                const userId = ctx.from?.id.toString();
-                if (!userId) {
-                    elizaLogger.warn("Message received from a user without an ID.");
+                const roomId = ctx.chat.id.toString(); // Extract roomId from chat ID
+                const userId = roomId; // Use roomId as userId
+                const content = ctx.message.text || ""; // Message content
+
+                if (!content) {
+                    elizaLogger.warn("Empty message received.");
                     return;
                 }
 
-                if (isUserRateLimited(userId)) {
-                    elizaLogger.info(`User ${userId} is rate-limited.`);
-                    await ctx.reply("You're sending messages too quickly. Please wait a bit before trying again.");
-                    return; // Skip further processing
-                }
-
-                // Check group authorization
-                if (!(await this.isGroupAuthorized(ctx))) {
+                // Rate-limiting logic
+                if (isUserRateLimited(roomId)) {
+                    elizaLogger.info(`Room ${roomId} is rate-limited.`);
+                    await ctx.reply("if you keep spamming you're gonna get this faggot overwhemled.");
                     return;
                 }
 
-                if (this.tgTrader) {
-                    const username = ctx.from?.username || ctx.from?.first_name || "Unknown";
-                    try {
-                        await getOrCreateRecommenderInBe(
-                            userId,
-                            username,
-                            this.backendToken,
-                            this.backend
-                        );
-                    } catch (error) {
-                        elizaLogger.error("Error getting or creating recommender in backend:", error);
-                    }
-                }
+                // Pass roomId and userId to MessageManager
+                await this.messageManager.handleMessage(ctx, { roomId, userId, content });
 
-                // Pass the message to the MessageManager for further processing
-                await this.messageManager.handleMessage(ctx);
             } catch (error) {
-                elizaLogger.error("❌ Error handling message:", error);
+                elizaLogger.error("Error handling message:", error);
                 if (error?.response?.error_code !== 403) {
                     try {
                         await ctx.reply("An error occurred while processing your message.");

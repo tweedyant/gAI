@@ -658,7 +658,6 @@ export class MessageManager {
         return response;
     }
 
-    // Main handler for incoming messages
     public async handleMessage(ctx: Context): Promise<void> {
         if (!ctx.message || !ctx.from) {
             return; // Exit if no message or sender info
@@ -681,151 +680,18 @@ export class MessageManager {
 
         const message = ctx.message;
         const chatId = ctx.chat?.id.toString();
-        const messageText = 'text' in message ? message.text :
-                        'caption' in message ? (message as any).caption : '';
-
-        // Add team handling at the start
-        if (this.runtime.character.clientConfig?.telegram?.isPartOfTeam &&
-            !this.runtime.character.clientConfig?.telegram?.shouldRespondOnlyToMentions) {
-
-            const isDirectlyMentioned = this._isMessageForMe(message);
-            const hasInterest = this._checkInterest(chatId);
-
-
-            // Non-leader team member showing interest based on keywords
-            if (!this._isTeamLeader() && this._isRelevantToTeamMember(messageText, chatId)) {
-
-                this.interestChats[chatId] = {
-                    currentHandler: this.bot.botInfo?.id.toString(),
-                    lastMessageSent: Date.now(),
-                    messages: []
-                };
-            }
-
-            const isTeamRequest = this._isTeamCoordinationRequest(messageText);
-            const isLeader = this._isTeamLeader();
-
-
-            // Check for continued interest
-            if (hasInterest && !isDirectlyMentioned) {
-                const lastSelfMemories = await this.runtime.messageManager.getMemories({
-                    roomId: stringToUuid(chatId + "-" + this.runtime.agentId),
-                    unique: false,
-                    count: 5
-                });
-
-                const lastSelfSortedMemories = lastSelfMemories?.filter(m => m.userId === this.runtime.agentId)
-                    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-                const isRelevant = this._isRelevantToTeamMember(
-                    messageText,
-                    chatId,
-                    lastSelfSortedMemories?.[0]
-                );
-
-                if (!isRelevant) {
-                    delete this.interestChats[chatId];
-                    return;
-                }
-            }
-
-            // Handle team coordination requests
-            if (isTeamRequest) {
-                if (isLeader) {
-                    this.interestChats[chatId] = {
-                        currentHandler: this.bot.botInfo?.id.toString(),
-                        lastMessageSent: Date.now(),
-                        messages: []
-                    };
-                } else {
-                    this.interestChats[chatId] = {
-                        currentHandler: this.bot.botInfo?.id.toString(),
-                        lastMessageSent: Date.now(),
-                        messages: []
-                    };
-
-                    if (!isDirectlyMentioned) {
-                        this.interestChats[chatId].lastMessageSent = 0;
-                    }
-
-                }
-            }
-
-            // Check for other team member mentions using cached usernames
-            const otherTeamMembers = this.runtime.character.clientConfig.telegram.teamAgentIds.filter(
-                id => id !== this.bot.botInfo?.id.toString()
-            );
-
-            const mentionedTeamMember = otherTeamMembers.find(id => {
-                const username = this._getTeamMemberUsername(id);
-                return username && messageText?.includes(`@${username}`);
-            });
-
-            // If another team member is mentioned, clear our interest
-            if (mentionedTeamMember) {
-                if (hasInterest || this.interestChats[chatId]?.currentHandler === this.bot.botInfo?.id.toString()) {
-                    delete this.interestChats[chatId];
-
-                    // Only return if we're not the mentioned member
-                    if (!isDirectlyMentioned) {
-                        return;
-                    }
-                }
-            }
-
-            // Set/maintain interest only if we're mentioned or already have interest
-            if (isDirectlyMentioned) {
-                this.interestChats[chatId] = {
-                    currentHandler: this.bot.botInfo?.id.toString(),
-                    lastMessageSent: Date.now(),
-                    messages: []
-                };
-            } else if (!isTeamRequest && !hasInterest) {
-                return;
-            }
-
-            // Update message tracking
-            if (this.interestChats[chatId]) {
-                this.interestChats[chatId].messages.push({
-                    userId: stringToUuid(ctx.from.id.toString()),
-                    userName: ctx.from.username || ctx.from.first_name || "Unknown User",
-                    content: { text: messageText, source: "telegram" }
-                });
-
-                if (this.interestChats[chatId].messages.length > MESSAGE_CONSTANTS.MAX_MESSAGES) {
-                    this.interestChats[chatId].messages =
-                        this.interestChats[chatId].messages.slice(-MESSAGE_CONSTANTS.MAX_MESSAGES);
-                }
-            }
-        }
 
         try {
-            // Convert IDs to UUIDs
-            const userId = stringToUuid(ctx.from.id.toString()) as UUID;
+            // Convert roomId to UUID and use it as both roomId and userId
+            const roomId = stringToUuid(chatId + "-" + this.runtime.agentId) as UUID;
+            const userId = roomId;
 
             // Get user name
             const userName =
                 ctx.from.username || ctx.from.first_name || "Unknown User";
 
-            // Get chat ID
-            const chatId = stringToUuid(
-                ctx.chat?.id.toString() + "-" + this.runtime.agentId
-            ) as UUID;
-
-            // Get agent ID
-            const agentId = this.runtime.agentId;
-
-            // Get room ID
-            const roomId = chatId;
-
             // Ensure connection
-            await this.runtime.ensureConnection(
-                userId,
-                roomId,
-                userName,
-                userName,
-                "telegram"
-            );
+            await this.runtime.ensureConnection(userId, roomId, userName, userName, "telegram");
 
             // Get message ID
             const messageId = stringToUuid(
@@ -869,8 +735,8 @@ export class MessageManager {
             // Create memory for the message
             const memory: Memory = {
                 id: messageId,
-                agentId,
-                userId,
+                agentId: this.runtime.agentId,
+                userId, // Using roomId as userId
                 roomId,
                 content,
                 createdAt: message.date * 1000,
@@ -928,8 +794,8 @@ export class MessageManager {
                                     "-" +
                                     this.runtime.agentId
                             ),
-                            agentId,
-                            userId: agentId,
+                            agentId: this.runtime.agentId,
+                            userId: this.runtime.agentId,
                             roomId,
                             content: {
                                 ...content,
@@ -974,4 +840,5 @@ export class MessageManager {
             elizaLogger.error("Error sending message:", error);
         }
     }
+
 }
