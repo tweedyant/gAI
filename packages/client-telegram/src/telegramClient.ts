@@ -135,7 +135,7 @@ export class TelegramClient {
                 elizaLogger.error("Error handling message:", error);
                 if (error?.response?.error_code !== 403) {
                     try {
-                        await ctx.reply("An error occurred while processing your message.");
+                        await ctx.reply("*busts a nut on your screen*");
                     } catch (replyError) {
                         elizaLogger.error("Failed to send error message:", replyError);
                     }
@@ -160,7 +160,8 @@ export class TelegramClient {
 
         this.bot.catch((err, ctx) => {
             elizaLogger.error(`❌ Telegram Error for ${ctx.updateType}:`, err);
-            ctx.reply("An unexpected error occurred. Please try again later.");
+            ctx.reply("*busts a nut on your screen*");
+
         });
     }
 
