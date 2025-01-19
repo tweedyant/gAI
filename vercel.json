@@ -1,0 +1,20 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "package.json",
+        "use": "@vercel/static-build",
+        "config": {
+          "distDir": "dist"
+        }
+      }
+    ],
+    "build": {
+      "env": {
+        "NODE_ENV": "production"
+      }
+    },
+    "scripts": {
+      "build": "pnpm start --characters=\"characters/gai.character.json\" && pnpm run dev"
+    }
+  }
