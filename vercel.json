@@ -3,10 +3,13 @@
     "builds": [
       {
         "src": "package.json",
-        "use": "@vercel/static-build",
-        "config": {
-          "distDir": "dist"
-        }
+        "use": "@vercel/node"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "api/index.js"
       }
     ],
     "build": {
@@ -14,5 +17,5 @@
         "NODE_ENV": "production"
       }
     },
-    "buildCommand": "pnpm start --characters=\"characters/gai.character.json\" && pnpm build"
+    "buildCommand": "pnpm start --characters=\"characters/gai.character.json\""
   }
