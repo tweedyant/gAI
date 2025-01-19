@@ -14,7 +14,5 @@
         "NODE_ENV": "production"
       }
     },
-    "scripts": {
-      "build": "pnpm start --characters=\"characters/gai.character.json\" && pnpm run dev"
-    }
+    "buildCommand": "pnpm start --characters=\"characters/gai.character.json\" && pnpm run dev"
   }
