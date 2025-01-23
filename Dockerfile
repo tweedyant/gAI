@@ -1,5 +1,5 @@
-# Use Node.js 22-alpine image
-FROM node:22-alpine
+# Use Node.js 23-alpine image
+FROM node:23-alpine
 
 # Set the working directory
 WORKDIR /usr/src/app
@@ -16,14 +16,13 @@ ENV SHELL=/bin/sh
 RUN npm install -g pnpm
 
 # Add global dependencies
-RUN pnpm config set global-bin-dir /usr/local/bin && \
-    pnpm add -g ts-node typescript
+RUN pnpm add -g ts-node typescript
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
 # Install project dependencies
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --frozen-lockfile --shamefully-hoist
 
 # Copy application code
 COPY . .
