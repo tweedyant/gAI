@@ -1,18 +1,20 @@
-# Use a Node.js image
-FROM node:23.3.0-alpine
+# Use a compatible Node.js version (22.x)
+FROM node:22-alpine
 
-# Set the working directory inside the container
+# Set the working directory
 WORKDIR /usr/src/app
 
-# Install system dependencies required for node-gyp
-RUN apk add --no-cache python3 make g++ && \
-    ln -sf python3 /usr/bin/python
+# Install build tools and dependencies
+RUN apk add --no-cache python3 make g++ && ln -sf python3 /usr/bin/python
 
-# Copy package files to the working directory
+# Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies with pnpm
+# Install pnpm globally and project dependencies
 RUN npm install -g pnpm && pnpm install --prod --frozen-lockfile
+
+# Install ts-node globally (if required)
+RUN pnpm add -g ts-node typescript
 
 # Copy the application code
 COPY . .
