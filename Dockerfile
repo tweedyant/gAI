@@ -12,11 +12,12 @@ ENV PNPM_HOME=/usr/local/share/.pnpm
 ENV PATH=$PNPM_HOME/bin:$PATH
 ENV SHELL=/bin/sh
 
-# Install pnpm globally and create global bin directory
-RUN npm install -g pnpm && mkdir -p $PNPM_HOME && chmod -R 775 $PNPM_HOME
+# Install pnpm globally
+RUN npm install -g pnpm
 
-# Ensure PATH is available for global installations
-RUN export PATH=$PNPM_HOME/bin:$PATH && pnpm add -g ts-node typescript
+# Add global dependencies
+RUN pnpm config set global-bin-dir /usr/local/bin && \
+    pnpm add -g ts-node typescript
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
