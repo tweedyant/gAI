@@ -1,55 +1,24 @@
-# Use a specific Node.js version for better reproducibility
-FROM node:23.3.0-slim AS builder
+# Use a Node.js image
+FROM node:23.3.0-alpine
 
-# Install pnpm globally and install necessary build tools
-RUN npm install -g pnpm@9.4.0 && \
-    apt-get update && \
-    apt-get install -y git python3 make g++ && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Set the working directory inside the container
+WORKDIR /usr/src/app
 
-# Set Python 3 as the default python
-RUN ln -s /usr/bin/python3 /usr/bin/python
+# Install system dependencies required for node-gyp
+RUN apk add --no-cache python3 make g++ && \
+    ln -sf python3 /usr/bin/python
 
-# Set the working directory
-WORKDIR /app
+# Copy package files to the working directory
+COPY package.json pnpm-lock.yaml ./
 
-# Copy package.json and other configuration files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc turbo.json ./
+# Install dependencies with pnpm
+RUN npm install -g pnpm && pnpm install --prod --frozen-lockfile
 
-# Copy the rest of the application code
-COPY agent ./agent
-COPY packages ./packages
-COPY scripts ./scripts
-COPY characters ./characters
+# Copy the application code
+COPY . .
 
-# Install dependencies and build the project
-RUN pnpm install \
-    && pnpm build-docker \
-    && pnpm prune --prod
+# Specify the port the app will listen on
+EXPOSE 3000
 
-# Create a new stage for the final image
-FROM node:23.3.0-slim
-
-# Install runtime dependencies if needed
-RUN npm install -g pnpm@9.4.0 && \
-    apt-get update && \
-    apt-get install -y git python3 && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-# Copy built artifacts and production dependencies from the builder stage
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/pnpm-workspace.yaml ./
-COPY --from=builder /app/.npmrc ./
-COPY --from=builder /app/turbo.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/agent ./agent
-COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/characters ./characters
-
-# Set the command to run the application
-CMD ["pnpm", "start", "--non-interactive"]
+# Start the application
+CMD ["pnpm", "start", "--character=characters/gai.character.json"]

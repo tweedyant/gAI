@@ -1,41 +1,51 @@
-services:
-    tee:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        stdin_open: true
-        tty: true
-        volumes:
-            - /var/run/tappd.sock:/var/run/tappd.sock
-            - tee:/app/packages/client-twitter/src/tweetcache
-            - tee:/app/db.sqlite
-        environment:
-            - OPENAI_API_KEY=
-            - REDPILL_API_KEY=
-            - ELEVENLABS_XI_API_KEY=
-            - ELEVENLABS_MODEL_ID=eleven_multilingual_v2
-            - ELEVENLABS_VOICE_ID=21m00Tcm4TlvDq8ikWAM
-            - ELEVENLABS_VOICE_STABILITY=0.5
-            - ELEVENLABS_VOICE_SIMILARITY_BOOST=0.9
-            - ELEVENLABS_VOICE_STYLE=0.66
-            - ELEVENLABS_VOICE_USE_SPEAKER_BOOST=false
-            - ELEVENLABS_OPTIMIZE_STREAMING_LATENCY=4
-            - ELEVENLABS_OUTPUT_FORMAT=pcm_16000
-            - TWITTER_DRY_RUN=false
-            - TWITTER_USERNAME=
-            - TWITTER_PASSWORD=
-            - TWITTER_EMAIL=
-            - X_SERVER_URL=https://api.red-pill.ai/v1
-            - BIRDEYE_API_KEY=
-            - SOL_ADDRESS=So11111111111111111111111111111111111111112
-            - SLIPPAGE=1
-            - RPC_URL=https://api.mainnet-beta.solana.com
-            - HELIUS_API_KEY=
-            - SERVER_PORT=3000
-            - WALLET_SECRET_SALT=secret_salt
-        ports:
-            - "3000:80"
-        restart: always
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
 
-volumes:
-    tee:
+# Here the instructions define your application as a service called "server".
+# This service is built from the Dockerfile in the current directory.
+# You can add other services your application may depend on here, such as a
+# database or a cache. For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
+services:
+  server:
+    build:
+      context: .
+    environment:
+      NODE_ENV: production
+    ports:
+      - 3000:3000
+
+# The commented out section below is an example of how to define a PostgreSQL
+# database that your application can use. `depends_on` tells Docker Compose to
+# start the database before your application. The `db-data` volume persists the
+# database data between container restarts. The `db-password` secret is used
+# to set the database password. You must create `db/password.txt` and add
+# a password of your choosing to it before running `docker-compose up`.
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#   db:
+#     image: postgres
+#     restart: always
+#     user: postgres
+#     secrets:
+#       - db-password
+#     volumes:
+#       - db-data:/var/lib/postgresql/data
+#     environment:
+#       - POSTGRES_DB=example
+#       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+#     expose:
+#       - 5432
+#     healthcheck:
+#       test: [ "CMD", "pg_isready" ]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+# volumes:
+#   db-data:
+# secrets:
+#   db-password:
+#     file: db/password.txt
+
